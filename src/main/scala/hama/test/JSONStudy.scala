@@ -1,3 +1,0 @@
-package hama.test
-
-

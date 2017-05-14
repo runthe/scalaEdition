@@ -1,0 +1,30 @@
+타입 기초 
+
+https://twitter.github.io/scala_school/ko/type-basics.html
+
+
+추상 타입
+
+ http://docs.scala-lang.org/ko/tutorials/tour/abstract-types.html
+
+
+
+매개변수된 타입 (제너릭)
+
+http://docs.scala-lang.org/ko/tutorials/tour/generic-classes.html
+
+
+
+상위 타입 경계
+
+http://docs.scala-lang.org/ko/tutorials/tour/upper-type-bounds
+
+
+
+하위 타입 경계
+
+http://docs.scala-lang.org/ko/tutorials/tour/upper-type-bounds
+
+
+
+출처: http://hamait.tistory.com/723 [HAMA 블로그]

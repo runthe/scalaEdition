@@ -1,0 +1,142 @@
+나는 교육을 위한 목적으로 4개의 카테고리로 연산자들을 나눕니다.
+
+Keywords/reserved symbols
+Automatically imported methods
+Common methods
+Syntactic sugars/composition
+다행히도 대부분의 범주는 다음과 같은 질문에서 나타납니다:
+
+->    // Automatically imported method
+||=   // Syntactic sugar
+++=   // Syntactic sugar/composition or common method
+<=    // Common method
+_._   // Typo, though it's probably based on Keyword/composition
+::    // Common method
+:+=   // Common method
+대부분의 메소드의 정확한 의미는 그것들을 정의하는 클래스에 따라 다릅니다. 예를 들어, Int 의 <= 는 "보다 작거나 같음"을 의미합니다. 위 박스의 첫 번째 것, -> 는 아래에 예를 들어 보겠습니다. :: 는 아마도 List에 정의 된 메소드 일 것입니다. (같은 이름의 객체 일 수도 있지만)  : + = 는 아마도 다양한 Buffer 클래스에 정의 된 메소드 일 것입니다.
+
+자 구체적으로 보시죠
+
+
+
+Keywords/reserved symbols
+
+스칼라에는 특별한 기호가 있습니다. 그 중 두 개는 적절한 키워드로 간주되는 반면 다른 키워드들은 단지 "예약 된"키워드입니다.
+
+// Keywords
+<-  // Used on for-comprehensions, to separate pattern from generator
+=>  // Used for function types, function literals and import renaming
+
+// Reserved
+( )        // Delimit expressions and parameters
+[ ]        // Delimit type parameters
+{ }        // Delimit blocks
+.          // Method call and path separator
+// /* */   // Comments
+#          // Used in type notations
+:          // Type ascription or context bounds
+<: >: <%   // Upper, lower and view bounds
+<? <!      // Start token for various XML elements
+" """      // Strings
+'          // Indicate symbols and characters
+@          // Annotations and variable binding on pattern matching
+`          // Denote constant or enable arbitrary identifiers
+,          // Parameter separator
+;          // Statement separator
+_*         // vararg expansion
+_          // Many different meanings
+이것들은 모두 언어의 일부이며, Scala Specification(PDF 자체와 같이 언어를 적절하게 기술하는 텍스트에서 찾을 수 있습니다.
+
+마지막의 밑줄은 특별한 설명이 필요합니다. 왜냐하면 널리 사용되기 때문에 여러 가지 의미가 있기 때문입니다. 다음은 샘플입니다.
+
+import scala._    // Wild card -- all of Scala is imported
+import scala.{ Predef => _, _ } // Exception, everything except Predef
+def f[M[_]]       // Higher kinded type parameter
+def f(m: M[_])    // Existential type
+_ + _             // Anonymous function placeholder parameter
+m _               // Eta expansion of method into method value
+m(_)              // Partial function application
+_ => 5            // Discarded parameter
+case _ =>         // Wild card pattern -- matches anything
+f(xs: _*)         // Sequence xs is passed as multiple parameters to f(ys: T*)
+case Seq(xs @ _*) // Identifier xs is bound to the whole matched sequence
+
+
+Automatically imported methods
+
+따라서 위의 목록에서 찾고있는 기호를 찾지 못했다면 메소드 또는 그것의 일부 여야합니다. 그러나 종종 기호를 볼 수 있으며 클래스의 설명서에는 해당 방법이 없습니다. 이 경우 다른 메소드로 하나 이상의 메소드 컴포지션을 보거나 메소드를 범위로 가져 오거나 가져온 암시 적 변환을 통해 사용할 수 있습니다.
+
+These can still be found on ScalaDoc: you just have to know where to look for them. Or, failing that, look at the index (presently broken on 2.9.1, but available on nightly).
+
+Every Scala code has three automatic imports:
+
+// Not necessarily in this order
+import _root_.java.lang._      // _root_ denotes an absolute path
+import _root_.scala._
+import _root_.scala.Predef._
+The first two only make classes and singleton objects available. The third one contains all implicit conversions and imported methods, since Predef is an object itself.
+
+Looking inside Predef quickly show some symbols:
+
+class <:<
+class =:=
+object <%<
+object =:=
+Any other symbol will be made available through an implicit conversion. Just look at the methods tagged with implicit that receive, as parameter, an object of type that is receiving the method. For example:
+
+"a" -> 1  // Look for an implicit from String, AnyRef, Any or type parameter
+In the above case, -> is defined in the class ArrowAssoc through the method any2ArrowAssocthat takes an object of type A, where A is an unbounded type parameter to the same method.
+
+
+
+Common methods
+
+So, many symbols are simply methods on a class. For instance, if you do
+
+List(1, 2) ++ List(3, 4)
+You'll find the method ++ right on the ScalaDoc for List. However, there's one convention that you must be aware when searching for methods. Methods ending in colon (:) bind to the right instead of the left. In other words, while the above method call is equivalent to:
+
+List(1, 2).++(List(3, 4))
+If I had, instead 1 :: List(2, 3), that would be equivalent to:
+
+List(2, 3).::(1)
+So you need to look at the type found on the right when looking for methods ending in colon. Consider, for instance:
+
+1 +: List(2, 3) :+ 4
+The first method (+:) binds to the right, and is found on List. The second method (:+) is just a normal method, and binds to the left -- again, on List.
+
+
+
+Syntactic sugars/composition
+
+So, here's a few syntactic sugars that may hide a method:
+
+class Example(arr: Array[Int] = Array.fill(5)(0)) {
+  def apply(n: Int) = arr(n)
+  def update(n: Int, v: Int) = arr(n) = v
+  def a = arr(0); def a_=(v: Int) = arr(0) = v
+  def b = arr(1); def b_=(v: Int) = arr(1) = v
+  def c = arr(2); def c_=(v: Int) = arr(2) = v
+  def d = arr(3); def d_=(v: Int) = arr(3) = v
+  def e = arr(4); def e_=(v: Int) = arr(4) = v
+  def +(v: Int) = new Example(arr map (_ + v))
+  def unapply(n: Int) = if (arr.indices contains n) Some(arr(n)) else None
+}
+
+val Ex = new Example // or var for the last example
+println(Ex(0))  // calls apply(0)
+Ex(0) = 2       // calls update(0, 2)
+Ex.b = 3        // calls b_=(3)
+// This requires Ex to be a "val"
+val Ex(c) = 2   // calls unapply(2) and assigns result to c
+// This requires Ex to be a "var"
+Ex += 1         // substituted for Ex = Ex + 1
+The last one is interesting, because any symbolic method can be combined to form an assignment-like method that way.
+
+And, of course, there's various combinations that can appear in code:
+
+(_+_) // An expression, or parameter, that is an anonymous function with
+      // two parameters, used exactly where the underscores appear, and
+      // which calls the "+" method on the first parameter passing the
+      // second parameter as argument.
+
